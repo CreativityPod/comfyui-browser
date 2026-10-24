@@ -4,6 +4,8 @@ from os import path
 import os
 import shutil
 
+from PIL import Image
+
 from ..utils import get_target_folder_files, get_parent_path, get_info_filename, \
     image_extensions, video_extensions
 
@@ -117,3 +119,64 @@ async def api_view_file(request):
         content_type=content_type,
         headers={"Content-Disposition": f"filename=\"{filename}\""}
     )
+
+
+def parse_json_or_none(value):
+    if not value:
+        return None
+    try:
+        return json.loads(value)
+    except (TypeError, ValueError):
+        return None
+
+# filename, folder_path, folder_type
+async def api_get_file_metadata(request):
+    folder_type = request.query.get("folder_type", "outputs")
+    folder_path = request.query.get("folder_path", "")
+    filename = request.query.get("filename", None)
+    if not filename or '..' in folder_path or '..' in filename:
+        return web.Response(status=404)
+
+    parent_path = get_parent_path(folder_type)
+    file_path = path.join(parent_path, folder_path, filename)
+    if not path.isfile(file_path):
+        return web.Response(status=404)
+
+    metadata = {
+        "width": None,
+        "height": None,
+        "format": path.splitext(filename)[1][1:].lower(),
+        "workflow": None,
+        "prompt": None,
+        "parameters": None,
+    }
+
+    if path.splitext(filename)[1].lower() in image_extensions:
+        try:
+            with Image.open(file_path) as img:
+                metadata["width"], metadata["height"] = img.size
+                metadata["format"] = (img.format or metadata["format"]).lower()
+                info = img.info or {}
+                metadata["workflow"] = parse_json_or_none(info.get("workflow"))
+                metadata["prompt"] = parse_json_or_none(info.get("prompt"))
+                if isinstance(info.get("parameters"), str):
+                    metadata["parameters"] = info["parameters"]
+
+                # SaveAnimatedWEBP stores them in EXIF: Make (0x010F) = "workflow:{...}",
+                # Model (0x0110) = "prompt:{...}"
+                for tag_value in img.getexif().values():
+                    if not isinstance(tag_value, str):
+                        continue
+                    key, sep, value = tag_value.partition(':')
+                    if sep and key in ("workflow", "prompt") and not metadata[key]:
+                        metadata[key] = parse_json_or_none(value)
+        except Exception as e:
+            print(f'[comfyui-browser] failed to read metadata of {file_path}: {e}')
+
+    if not metadata["workflow"]:
+        json_path = path.splitext(file_path)[0] + '.json'
+        if path.isfile(json_path):
+            with open(json_path, 'r', encoding='utf-8') as f:
+                metadata["workflow"] = parse_json_or_none(f.read())
+
+    return web.json_response(metadata)

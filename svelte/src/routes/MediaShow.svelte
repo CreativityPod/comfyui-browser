@@ -2,6 +2,19 @@
   export let file: any;
   export let styleClass: string;
   export let onClickDir: Function;
+  export let onOpen: Function | undefined = undefined;
+
+  function onClickFile(e: MouseEvent) {
+    if (!onOpen || !['image', 'video'].includes(file.fileType)) {
+      return;
+    }
+    // Keep ctrl/cmd/shift-click opening the raw file in a new tab.
+    if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) {
+      return;
+    }
+    e.preventDefault();
+    onOpen(file);
+  }
 </script>
 
 
@@ -19,6 +32,7 @@
     <a
       href={file.url}
       target="_blank"
+      on:click={onClickFile}
       style="height: inherit; width: inherit;"
     >
       {#if file.fileType === 'json'}

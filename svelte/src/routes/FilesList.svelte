@@ -4,6 +4,7 @@
   import { t } from 'svelte-i18n';
   import type { FOLDER_TYPES } from './utils';
   import MediaShow from './MediaShow.svelte';
+  import ImageViewer from './ImageViewer.svelte';
   import type Toast from './Toast.svelte';
 
   export let comfyUrl: string;
@@ -27,6 +28,10 @@
   let searchQuery = '';
   let searchRegex = new RegExp('');
   let scrollTop = 0;
+  let viewerIndex = -1;
+
+  $: filteredFiles = files.filter((f) => searchRegex.test(f.name.toLowerCase()));
+  $: mediaFiles = filteredFiles.filter((f) => ['image', 'video'].includes(f.fileType));
 
   $: tt = function(key: string) {
     return $t('filesList.' + key);
@@ -36,6 +41,11 @@
     loaded = false;
     files = await fetchFiles(folderType, comfyUrl, folderPath);
     loaded = true;
+    viewerIndex = -1;
+  }
+
+  function onOpenFile(file: any) {
+    viewerIndex = mediaFiles.indexOf(file);
   }
 
   onMount(async () => {
@@ -137,13 +147,11 @@
 </div>
 
 <div class="grid grid-cols-4 lg:grid-cols-6 gap-2">
-  {#each files
-    .filter((f) => searchRegex.test(f.name.toLowerCase()))
-    .slice(0, showCursor) as file}
+  {#each filteredFiles.slice(0, showCursor) as file}
     {#if WHITE_EXTS.includes(file.fileType)}
       <div class="p-2 bg-info-content">
         <div class="flex items-center">
-          <MediaShow {file} styleClass="w-full h-16 sm:h-36" {onClickDir} />
+          <MediaShow {file} styleClass="w-full h-16 sm:h-36" {onClickDir} onOpen={onOpenFile} />
         </div>
 
         <p class="font-bold max-h-12 leading-6 overflow-auto mt-1">
@@ -210,4 +218,16 @@
     <path fill="#333333" d="M572.235 205.282v600.365a30.118 30.118 0 11-60.235 0V205.282L292.382 438.633a28.913 28.913 0 01-42.646 0 33.43 33.43 0 010-45.236l271.058-288.045a28.913 28.913 0 0142.647 0L834.5 393.397a33.43 33.43 0 010 45.176 28.913 28.913 0 01-42.647 0l-219.618-233.23z"/>
   </svg>
 </button>
+{/if}
+
+{#if viewerIndex >= 0 && mediaFiles[viewerIndex]}
+  <ImageViewer
+    files={mediaFiles}
+    bind:index={viewerIndex}
+    {comfyUrl}
+    {folderType}
+    {comfyApp}
+    {toast}
+    onClose={() => viewerIndex = -1}
+  />
 {/if}

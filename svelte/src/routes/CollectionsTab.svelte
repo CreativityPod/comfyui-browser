@@ -3,6 +3,7 @@
   import { t } from 'svelte-i18n';
   import { fetchFiles, onLoadWorkflow, onScroll } from './utils';
   import MediaShow from './MediaShow.svelte';
+  import ImageViewer from './ImageViewer.svelte';
   import Toast from './Toast.svelte';
 
   export let comfyUrl: string;
@@ -19,6 +20,10 @@
   let loaded: boolean = false;
   let searchQuery = '';
   let searchRegex = new RegExp('');
+  let viewerIndex = -1;
+
+  $: filteredFiles = files.filter((f) => searchRegex.test(f.name.toLowerCase()) || searchRegex.test(f.notes.toLowerCase()));
+  $: mediaFiles = filteredFiles.filter((f) => ['image', 'video'].includes(f.fileType));
 
   $: if (folderPath != undefined) {
     refresh();
@@ -38,6 +43,11 @@
     loaded = true;
     files = await fetchFiles(folderType, comfyUrl, folderPath);
     loaded = true;
+    viewerIndex = -1;
+  }
+
+  function onOpenFile(file: any) {
+    viewerIndex = mediaFiles.indexOf(file);
   }
 
   onMount(async () => {
@@ -262,11 +272,9 @@
 </div>
 
 <ul class="space-y-2">
-  {#each files
-    .filter((f) => searchRegex.test(f.name.toLowerCase()) || searchRegex.test(f.notes.toLowerCase()))
-    .slice(0, showCursor) as file}
+  {#each filteredFiles.slice(0, showCursor) as file}
     <li class="flex h-16 sm:h-28 border-0 space-x-4 p-2 bg-info-content">
-      <MediaShow {file} styleClass="w-16 sm:w-28" {onClickDir} />
+      <MediaShow {file} styleClass="w-16 sm:w-28" {onClickDir} onOpen={onOpenFile} />
       <div class="space-y-2 w-96 relative">
         <input
           type="text"
@@ -329,6 +337,18 @@
       {/if}
     </span>
   </div>
+{/if}
+
+{#if viewerIndex >= 0 && mediaFiles[viewerIndex]}
+  <ImageViewer
+    files={mediaFiles}
+    bind:index={viewerIndex}
+    {comfyUrl}
+    {folderType}
+    {comfyApp}
+    {toast}
+    onClose={() => viewerIndex = -1}
+  />
 {/if}
 
 <Toast bind:this={toast} />
