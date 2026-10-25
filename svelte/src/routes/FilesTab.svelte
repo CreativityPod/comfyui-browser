@@ -1,12 +1,12 @@
 <script lang="ts">
   import Toast from './Toast.svelte';
-  import FilesList from './FilesList.svelte';
+  import OutputsBrowser from './OutputsBrowser.svelte';
 
   export let comfyUrl: string;
 
   let toast: Toast;
 </script>
 
-<FilesList folderType="outputs" {comfyUrl} {toast} />
+<OutputsBrowser folderType="outputs" {comfyUrl} {toast} />
 
 <Toast bind:this={toast} />

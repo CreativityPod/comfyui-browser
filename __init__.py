@@ -15,6 +15,8 @@ browser_app.add_routes([
     web.put("/files", files.api_update_file),
     web.get("/files/view", files.api_view_file),
     web.get("/files/metadata", files.api_get_file_metadata),
+    web.get("/files/tree", files.api_get_folder_tree),
+    web.post("/files/rename", files.api_rename_folder),
 
     web.post("/collections", collections.api_add_to_collections),
     web.post("/collections/workflows", collections.api_create_new_workflow),

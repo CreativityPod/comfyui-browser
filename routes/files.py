@@ -3,6 +3,7 @@ import json
 from os import path
 import os
 import shutil
+import time
 
 from PIL import Image
 
@@ -21,6 +22,62 @@ async def api_get_files(request):
     return web.json_response({
         'files': files
     })
+
+
+def build_folder_tree(dir_path: str, rel_path: str, deadline: float):
+    node = {
+        "name": path.basename(dir_path) if rel_path else "",
+        "path": rel_path,
+        "media_count": 0,
+        "modified_at": 0,
+        "created_at": 0,
+        "children": [],
+        "truncated": False,
+    }
+    try:
+        stat = os.stat(dir_path)
+        node["created_at"] = stat.st_ctime
+        node["modified_at"] = stat.st_mtime
+        entries = list(os.scandir(dir_path))
+    except OSError:
+        return node
+
+    for entry in entries:
+        name = entry.name
+        if name.startswith('.'):
+            continue
+        try:
+            if entry.is_dir(follow_symlinks=False):
+                if time.monotonic() > deadline:
+                    node["truncated"] = True
+                    continue
+                child_rel = f'{rel_path}/{name}' if rel_path else name
+                node["children"].append(build_folder_tree(entry.path, child_rel, deadline))
+            elif entry.is_file():
+                ext = path.splitext(name)[1].lower()
+                if ext in image_extensions or ext in video_extensions:
+                    node["media_count"] += 1
+                    node["modified_at"] = max(node["modified_at"], entry.stat().st_mtime)
+        except OSError:
+            continue
+
+    # A folder counts as recently active when anything below it changed.
+    for child in node["children"]:
+        node["modified_at"] = max(node["modified_at"], child["modified_at"])
+
+    return node
+
+
+# folder_type
+async def api_get_folder_tree(request):
+    folder_type = request.query.get('folder_type', 'outputs')
+    parent_path = get_parent_path(folder_type)
+    if not path.isdir(parent_path):
+        return web.json_response({'tree': None}, status=404)
+
+    # Very large trees are cut off after a few seconds rather than hanging the UI.
+    tree = build_folder_tree(parent_path, '', time.monotonic() + 5)
+    return web.json_response({'tree': tree})
 
 
 # filename, folder_path, folder_type
@@ -89,6 +146,37 @@ async def api_update_file(request):
             json.dump(extra, outfile)
 
     return web.Response(status=201)
+
+def is_safe_name(name: str):
+    return bool(name) and name not in ('.', '..') and not name.startswith('.') \
+        and '/' not in name and '\\' not in name and '\0' not in name
+
+
+# folder_path, folder_type, filename, new_name
+async def api_rename_folder(request):
+    json_data = await request.json()
+    folder_path = json_data.get('folder_path', '')
+    folder_type = json_data.get('folder_type', 'outputs')
+    filename = json_data.get('filename', '')
+    new_name = (json_data.get('new_name') or '').strip()
+
+    if '..' in folder_path.split('/') or not is_safe_name(filename):
+        return web.json_response({'message': 'Invalid folder'}, status=400)
+    if not is_safe_name(new_name):
+        return web.json_response({'message': 'Invalid name'}, status=400)
+
+    parent_path = path.join(get_parent_path(folder_type), folder_path)
+    old_path = path.join(parent_path, filename)
+    new_path = path.join(parent_path, new_name)
+    if not path.isdir(old_path):
+        return web.json_response({'message': 'Folder not found'}, status=404)
+    # A case-only rename on macOS points at the same folder, so allow that one.
+    if path.exists(new_path) and not path.samefile(old_path, new_path):
+        return web.json_response({'message': 'A folder with that name already exists'}, status=409)
+
+    os.rename(old_path, new_path)
+    return web.json_response({'path': f'{folder_path}/{new_name}' if folder_path else new_name})
+
 
 # filename, folder_path, folder_type
 async def api_view_file(request):
