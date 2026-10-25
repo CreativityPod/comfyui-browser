@@ -33,6 +33,7 @@
   $: hasPrev = index > 0;
   $: hasNext = index < files.length - 1;
   $: if (file) {
+    copiedKey = '';
     loadMetadata(file);
     preloadNeighbours(index);
   }
@@ -95,10 +96,20 @@
     }
   }
 
-  async function onCopy(text: any) {
+  // Which copy button just succeeded, so its label can read "Copied" for a moment.
+  let copiedKey = '';
+  let copiedTimer: ReturnType<typeof setTimeout> | undefined;
+
+  async function onCopy(text: any, key: string) {
     const str = typeof text === 'string' ? text : JSON.stringify(text, null, 2);
     const ok = await copyText(str);
-    toast.show(ok, tt('Copied'), tt('Failed to copy'));
+    if (!ok) {
+      toast.show(false, '', tt('Failed to copy'));
+      return;
+    }
+    copiedKey = key;
+    clearTimeout(copiedTimer);
+    copiedTimer = setTimeout(() => copiedKey = '', 1500);
   }
 
   function baseName(name: string) {
@@ -241,7 +252,7 @@
                 <div>
                   <div class="flex items-center justify-between">
                     <span class="text-gray-400">{tt('Positive')}</span>
-                    <button class="btn btn-link btn-xs p-0 no-underline text-accent" on:click={() => onCopy(s.positive)}>{tt('Copy')}</button>
+                    <button class="btn btn-link btn-xs p-0 no-underline {copiedKey === `pos-${i}` ? 'text-success' : 'text-accent'}" on:click={() => onCopy(s.positive, `pos-${i}`)}>{copiedKey === `pos-${i}` ? '✓ ' + tt('Copied') : tt('Copy')}</button>
                   </div>
                   {#if s.positiveGenerated}
                     <p class="italic text-gray-400 text-xs mb-1">{tt('llmInputPrompt')}</p>
@@ -258,7 +269,7 @@
                 <div>
                   <div class="flex items-center justify-between">
                     <span class="text-gray-400">{tt('Negative')}</span>
-                    <button class="btn btn-link btn-xs p-0 no-underline text-accent" on:click={() => onCopy(s.negative)}>{tt('Copy')}</button>
+                    <button class="btn btn-link btn-xs p-0 no-underline {copiedKey === `neg-${i}` ? 'text-success' : 'text-accent'}" on:click={() => onCopy(s.negative, `neg-${i}`)}>{copiedKey === `neg-${i}` ? '✓ ' + tt('Copied') : tt('Copy')}</button>
                   </div>
                   {#if s.negativeGenerated}
                     <p class="italic text-gray-400 text-xs mb-1">{tt('llmInputPrompt')}</p>
@@ -288,7 +299,7 @@
         <section>
           <div class="flex items-center justify-between">
             <h3 class="font-bold">{tt('Parameters')}</h3>
-            <button class="btn btn-link btn-xs p-0 no-underline text-accent" on:click={() => onCopy(metadata?.parameters)}>{tt('Copy')}</button>
+            <button class="btn btn-link btn-xs p-0 no-underline {copiedKey === 'params' ? 'text-success' : 'text-accent'}" on:click={() => onCopy(metadata?.parameters, 'params')}>{copiedKey === 'params' ? '✓ ' + tt('Copied') : tt('Copy')}</button>
           </div>
           <p class="whitespace-pre-wrap break-words bg-base-100 rounded p-2">{metadata.parameters}</p>
         </section>
@@ -304,7 +315,7 @@
               </button>
             {/if}
             {#if metadata.workflow}
-              <button class="btn btn-outline btn-sm" on:click={() => onCopy(metadata?.workflow)}>{tt('Copy workflow')}</button>
+              <button class="btn btn-outline btn-sm" on:click={() => onCopy(metadata?.workflow, 'workflow')}>{copiedKey === 'workflow' ? '✓ ' + tt('Copied') : tt('Copy workflow')}</button>
               <button class="btn btn-outline btn-sm" on:click={() => downloadJson(metadata?.workflow, baseName(file.name) + '.json')}>
                 {tt('Download .json')}
               </button>
