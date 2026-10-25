@@ -10,11 +10,14 @@ export const WHITE_EXTS = ['html', 'image', 'video', 'json', 'dir'];
 
 const localStorageKey = 'comfyui-browser';
 
+// ComfyUI reuses a deleted file's name for the next image it saves, so the
+// version keeps the browser from showing its cached copy of the old file.
 function getFileUrl(comfyUrl: string, folderType: string, file: any) {
+  const version = `?v=${Math.round(file.created_at * 1000)}-${file.bytes}`;
   if (file.folder_path) {
-    return `${comfyUrl}/browser/s/${folderType}/${file.folder_path}/${file.name}`;
+    return `${comfyUrl}/browser/s/${folderType}/${file.folder_path}/${file.name}${version}`;
   } else {
-    return `${comfyUrl}/browser/s/${folderType}/${file.name}`;
+    return `${comfyUrl}/browser/s/${folderType}/${file.name}${version}`;
   }
 }
 

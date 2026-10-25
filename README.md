@@ -13,7 +13,8 @@ https://github.com/talesofai/comfyui-browser/assets/828837/803ce57a-1cf2-4e1c-be
 
 ## Features
 
-- Browse and manage your images/videos/workflows in the output folder.
+- Browse and manage your images/videos/workflows in the output folder, with a folder tree (pin, rename, recently viewed, find folder, keyboard navigation) next to the thumbnail grid.
+- View images and videos in a built-in viewer with prev/next arrows and an info panel showing the prompts, model, LoRAs, sampler settings, resolution and workflow embedded by ComfyUI.
 - Add your workflows to the 'Saves' so that you can switch and manage them more easily.
 - Sync your 'Saves' anywhere by Git.
 - Subscribe workflow sources by Git and load them more easily.
@@ -108,6 +109,8 @@ cd custom_nodes && git clone https://github.com/tzwm/comfyui-browser.git
   href="#Configuring">Configuring</a> for its default, and how to set the path
   to something different.
 - Press 'B' to toggle the Browser dialog in the ComfyUI.
+- Image viewer: ←/→ previous/next, I toggles the info panel, Esc closes. Ctrl/Cmd-click a thumbnail to open the raw file in a new tab.
+- Outputs folder tree (click the tree first): ↑/↓ move between folders, →/← expand or collapse, Home/End jump, F2 renames, Delete or Cmd/Ctrl+Backspace deletes.
 
 
 ## Development

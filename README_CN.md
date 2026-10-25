@@ -13,7 +13,8 @@ https://www.bilibili.com/video/BV1qc411m7Gp/
 
 ## 功能
 
-- 浏览和管理你的 ComfyUI 输出文件
+- 浏览和管理你的 ComfyUI 输出文件，左侧文件夹树支持置顶、重命名、最近浏览、查找文件夹和键盘导航
+- 内置图片/视频查看器，支持左右切换，信息面板显示 ComfyUI 保存的提示词、模型、LoRA、采样参数、分辨率和工作流
 - 添加工作流到收藏夹，方便管理和调用
 - 可以通过 Git 来远程同步收藏夹
 - 订阅工作流仓库，方便抄作业
@@ -73,6 +74,8 @@ cd custom_nodes && git clone https://github.com/tzwm/comfyui-browser.git
 
   - 请尽量在 Windows 上测试, 因为我只有 Linux 和 macOS
   - 在 ComfyUI 中可以按 'B' 键来打开/关闭 Browser
+  - 查看器：←/→ 切换上一张/下一张，I 显示/隐藏信息面板，Esc 关闭；按住 Ctrl/Cmd 点击缩略图可在新标签页打开原文件
+  - 文件夹树（先点击文件夹树）：↑/↓ 切换文件夹，→/← 展开或折叠，Home/End 跳到首尾，F2 重命名，Delete 或 Cmd/Ctrl+Backspace 删除
 
 
 
