@@ -273,6 +273,65 @@ export function summarizePrompt(graph: any): GenerationSummary | null {
   return summary;
 }
 
+export interface ResolutionInfo {
+  dimensions: string;
+  megapixels: string;
+  aspect: string;
+}
+
+// Common generation ratios, named like ComfyUI's resolution selector nodes.
+const NAMED_RATIOS: Array<[number, number, string]> = [
+  [1, 1, 'Square'],
+  [2, 3, 'Portrait Photo'],
+  [3, 2, 'Landscape Photo'],
+  [3, 4, 'Portrait Standard'],
+  [4, 3, 'Landscape Standard'],
+  [4, 5, 'Portrait'],
+  [5, 4, 'Landscape'],
+  [9, 16, 'Portrait Widescreen'],
+  [16, 9, 'Widescreen'],
+  [9, 21, 'Portrait Ultrawide'],
+  [21, 9, 'Ultrawide'],
+];
+
+function gcd(a: number, b: number): number {
+  return b === 0 ? a : gcd(b, a % b);
+}
+
+export function describeResolution(width: number, height: number): ResolutionInfo | null {
+  if (!width || !height) {
+    return null;
+  }
+  const ratio = width / height;
+  const megapixels = `${(width * height / 1_000_000).toFixed(2)} MP`;
+  const dimensions = `${width} × ${height}`;
+
+  // Models need sides in multiples of 8, 16 or 64, so sizes made for a ratio land
+  // close to it rather than on it: 1% counts as exact, 5% as approximate.
+  let best: [number, number, string] | undefined;
+  let bestError = Infinity;
+  for (const named of NAMED_RATIOS) {
+    const error = Math.abs(ratio / (named[0] / named[1]) - 1);
+    if (error < bestError) {
+      best = named;
+      bestError = error;
+    }
+  }
+  if (best && bestError <= 0.05) {
+    const prefix = bestError <= 0.01 ? '' : '≈ ';
+    return { dimensions, megapixels, aspect: `${prefix}${best[0]}:${best[1]} (${best[2]})` };
+  }
+
+  // Odd shapes: a small exact ratio if there is one, otherwise the long side per unit of short side.
+  const d = gcd(width, height);
+  if (width / d <= 32 && height / d <= 32) {
+    return { dimensions, megapixels, aspect: `${width / d}:${height / d}` };
+  }
+  const orientation = ratio >= 1 ? 'Landscape' : 'Portrait';
+  const aspect = ratio >= 1 ? `${ratio.toFixed(2)}:1` : `1:${(1 / ratio).toFixed(2)}`;
+  return { dimensions, megapixels, aspect: `${aspect} (${orientation})` };
+}
+
 export async function copyText(text: string) {
   try {
     await navigator.clipboard.writeText(text);

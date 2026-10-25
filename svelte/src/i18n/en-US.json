@@ -99,6 +99,9 @@
     "workflowHint": "The full node graph as it looked in the ComfyUI editor, including positions, groups and links. This is what Load restores.",
     "promptHint": "ComfyUI's API-format graph that was sent to the queue: each node id with its type and final input values. The summary above is read from this.",
     "generatedPrompt": "Written at run time by a text-generation (LLM) node, so the final text isn't saved in this file.",
-    "llmInputPrompt": "An LLM node rewrote this prompt while the workflow ran. The rewritten text isn't saved in the file, so this is the prompt you gave it."
+    "llmInputPrompt": "An LLM node rewrote this prompt while the workflow ran. The rewritten text isn't saved in the file, so this is the prompt you gave it.",
+    "Resolution": "Resolution",
+    "Megapixels": "Megapixels",
+    "Aspect ratio": "Aspect ratio"
   }
 }

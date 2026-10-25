@@ -99,6 +99,9 @@
     "workflowHint": "ComfyUI 编辑器中的完整节点图，包括位置、分组和连线。加载时恢复的就是它。",
     "promptHint": "提交到队列的 API 格式图：每个节点 id 及其类型和最终输入值。上方摘要即由此读取。",
     "generatedPrompt": "由文本生成（LLM）节点在运行时生成，最终文本未保存在此文件中。",
-    "llmInputPrompt": "运行时 LLM 节点改写了此提示词，改写后的文本未保存在文件中，这里显示的是你输入的原始提示词。"
+    "llmInputPrompt": "运行时 LLM 节点改写了此提示词，改写后的文本未保存在文件中，这里显示的是你输入的原始提示词。",
+    "Resolution": "分辨率",
+    "Megapixels": "像素数",
+    "Aspect ratio": "宽高比"
   }
 }

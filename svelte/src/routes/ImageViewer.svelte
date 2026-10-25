@@ -3,7 +3,7 @@
   import { t } from 'svelte-i18n';
   import { onLoadWorkflow } from './utils';
   import type { FOLDER_TYPES } from './utils';
-  import { fetchMetadata, summarizePrompt, copyText, downloadJson } from './metadata';
+  import { fetchMetadata, summarizePrompt, copyText, downloadJson, describeResolution } from './metadata';
   import type { FileMetadata, GenerationSummary } from './metadata';
   import type Toast from './Toast.svelte';
 
@@ -30,6 +30,10 @@
   }
 
   $: file = files[index];
+  // Videos get their size from the player once it has loaded.
+  let videoWidth = 0;
+  let videoHeight = 0;
+  $: resolution = describeResolution(metadata?.width || videoWidth, metadata?.height || videoHeight);
   $: hasPrev = index > 0;
   $: hasNext = index < files.length - 1;
   $: if (file) {
@@ -165,6 +169,8 @@
           <video
             class="max-h-full max-w-full object-contain"
             src={file.previewUrl}
+            bind:videoWidth
+            bind:videoHeight
             controls
             autoplay
             loop
@@ -206,9 +212,13 @@
       <section>
         <h3 class="font-bold mb-1">{tt('File')}</h3>
         <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
-          {#if metadata?.width}
-            <dt class="text-gray-400">{tt('Size')}</dt>
-            <dd>{metadata.width} × {metadata.height}</dd>
+          {#if resolution && !summary}
+            <dt class="text-gray-400">{tt('Resolution')}</dt>
+            <dd>{resolution.dimensions}</dd>
+            <dt class="text-gray-400">{tt('Megapixels')}</dt>
+            <dd>{resolution.megapixels}</dd>
+            <dt class="text-gray-400">{tt('Aspect ratio')}</dt>
+            <dd>{resolution.aspect}</dd>
           {/if}
           <dt class="text-gray-400">{tt('File size')}</dt>
           <dd>{file.formattedSize}</dd>
@@ -289,9 +299,27 @@
                     <dd class="break-all">{formatValue(value)}</dd>
                   {/if}
                 {/each}
+                {#if resolution && i === summary.samplers.length - 1}
+                <dt class="text-gray-400">{tt('Resolution')}</dt>
+                <dd>{resolution.dimensions}</dd>
+                <dt class="text-gray-400">{tt('Megapixels')}</dt>
+                <dd>{resolution.megapixels}</dd>
+                <dt class="text-gray-400">{tt('Aspect ratio')}</dt>
+                <dd>{resolution.aspect}</dd>
+                {/if}
               </dl>
             </div>
           {/each}
+          {#if resolution && summary.samplers.length === 0}
+            <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
+              <dt class="text-gray-400">{tt('Resolution')}</dt>
+              <dd>{resolution.dimensions}</dd>
+              <dt class="text-gray-400">{tt('Megapixels')}</dt>
+              <dd>{resolution.megapixels}</dd>
+              <dt class="text-gray-400">{tt('Aspect ratio')}</dt>
+              <dd>{resolution.aspect}</dd>
+            </dl>
+          {/if}
         </section>
       {/if}
 
