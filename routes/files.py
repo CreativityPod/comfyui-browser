@@ -217,6 +217,47 @@ def parse_json_or_none(value):
     except (TypeError, ValueError):
         return None
 
+
+def read_image_generation_info(img, metadata):
+    info = img.info or {}
+    metadata["workflow"] = metadata["workflow"] or parse_json_or_none(info.get("workflow"))
+    metadata["prompt"] = metadata["prompt"] or parse_json_or_none(info.get("prompt"))
+    if isinstance(info.get("parameters"), str):
+        metadata["parameters"] = info["parameters"]
+
+    # SaveAnimatedWEBP stores them in EXIF: Make (0x010F) = "workflow:{...}",
+    # Model (0x0110) = "prompt:{...}"
+    for tag_value in img.getexif().values():
+        if not isinstance(tag_value, str):
+            continue
+        key, sep, value = tag_value.partition(':')
+        if sep and key in ("workflow", "prompt") and not metadata[key]:
+            metadata[key] = parse_json_or_none(value)
+
+
+def read_video_metadata(file_path, metadata):
+    # PyAV is a ComfyUI dependency; imported here so the plugin still loads without it.
+    import av
+
+    with av.open(file_path) as container:
+        tags = {key.lower(): value for key, value in container.metadata.items()}
+        if container.streams.video:
+            codec = container.streams.video[0].codec_context
+            metadata["width"], metadata["height"] = codec.width or None, codec.height or None
+
+    # VideoHelperSuite and ComfyUI's SaveVideo / SaveWEBM write "prompt" and "workflow" tags.
+    metadata["workflow"] = parse_json_or_none(tags.get("workflow"))
+    metadata["prompt"] = parse_json_or_none(tags.get("prompt"))
+
+    # Older VideoHelperSuite versions put both into one "comment" tag:
+    # {"prompt": "<json string>", "workflow": {...}}
+    comment = parse_json_or_none(tags.get("comment"))
+    if isinstance(comment, dict):
+        for key in ("workflow", "prompt"):
+            value = comment.get(key)
+            if not metadata[key] and value:
+                metadata[key] = value if isinstance(value, (dict, list)) else parse_json_or_none(value)
+
 # filename, folder_path, folder_type
 async def api_get_file_metadata(request):
     folder_type = request.query.get("folder_type", "outputs")
@@ -239,27 +280,33 @@ async def api_get_file_metadata(request):
         "parameters": None,
     }
 
-    if path.splitext(filename)[1].lower() in image_extensions:
+    extension = path.splitext(filename)[1].lower()
+    if extension in image_extensions:
         try:
             with Image.open(file_path) as img:
                 metadata["width"], metadata["height"] = img.size
                 metadata["format"] = (img.format or metadata["format"]).lower()
-                info = img.info or {}
-                metadata["workflow"] = parse_json_or_none(info.get("workflow"))
-                metadata["prompt"] = parse_json_or_none(info.get("prompt"))
-                if isinstance(info.get("parameters"), str):
-                    metadata["parameters"] = info["parameters"]
-
-                # SaveAnimatedWEBP stores them in EXIF: Make (0x010F) = "workflow:{...}",
-                # Model (0x0110) = "prompt:{...}"
-                for tag_value in img.getexif().values():
-                    if not isinstance(tag_value, str):
-                        continue
-                    key, sep, value = tag_value.partition(':')
-                    if sep and key in ("workflow", "prompt") and not metadata[key]:
-                        metadata[key] = parse_json_or_none(value)
+                read_image_generation_info(img, metadata)
         except Exception as e:
             print(f'[comfyui-browser] failed to read metadata of {file_path}: {e}')
+    elif extension in video_extensions:
+        try:
+            read_video_metadata(file_path, metadata)
+        except Exception as e:
+            print(f'[comfyui-browser] failed to read metadata of {file_path}: {e}')
+
+        # VideoHelperSuite also saves the first frame as a PNG with the same metadata.
+        if not metadata["workflow"] and not metadata["prompt"]:
+            stem = path.splitext(file_path)[0]
+            for png_path in (stem + '.png', stem.removesuffix('-audio') + '.png'):
+                if not path.isfile(png_path):
+                    continue
+                try:
+                    with Image.open(png_path) as img:
+                        read_image_generation_info(img, metadata)
+                except Exception as e:
+                    print(f'[comfyui-browser] failed to read metadata of {png_path}: {e}')
+                break
 
     if not metadata["workflow"]:
         json_path = path.splitext(file_path)[0] + '.json'
