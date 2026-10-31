@@ -139,6 +139,13 @@
     "Unpin": "Unpin",
     "Rename": "Rename",
     "Renamed to": "Renamed to",
-    "Failed to rename": "Failed to rename"
+    "Failed to rename": "Failed to rename",
+    "Video thumbnails": "Video thumbnails",
+    "Play video thumbnails": "Play video thumbnails",
+    "Play video thumbnails on hover": "Play video thumbnails on hover",
+    "Show video thumbnails as still frames": "Show video thumbnails as still frames",
+    "Viewer audio": "Viewer audio",
+    "Viewer audio on": "Viewer audio: on",
+    "Viewer audio off": "Viewer audio: off (muted)"
   }
 }

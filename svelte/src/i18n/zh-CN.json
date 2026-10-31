@@ -139,6 +139,13 @@
     "Unpin": "取消置顶",
     "Rename": "重命名",
     "Renamed to": "已重命名为",
-    "Failed to rename": "重命名失败"
+    "Failed to rename": "重命名失败",
+    "Video thumbnails": "视频缩略图",
+    "Play video thumbnails": "播放视频缩略图",
+    "Play video thumbnails on hover": "鼠标悬停时播放视频缩略图",
+    "Show video thumbnails as still frames": "视频缩略图显示为静帧",
+    "Viewer audio": "查看器音频",
+    "Viewer audio on": "查看器音频：开",
+    "Viewer audio off": "查看器音频：关（静音）"
   }
 }

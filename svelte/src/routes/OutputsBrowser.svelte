@@ -18,10 +18,17 @@
 
   type FileSort = 'newest' | 'oldest' | 'name';
   type ThumbSize = 's' | 'm' | 'l';
+  type VideoMode = 'play' | 'hover' | 'still';
 
   const configKey = 'outputsBrowser';
   const thumbWidths: Record<ThumbSize, number> = { s: 120, m: 180, l: 280 };
   const thumbSizes: Array<ThumbSize> = ['s', 'm', 'l'];
+  const videoModes: Array<VideoMode> = ['play', 'hover', 'still'];
+  const videoModeLabels: Record<VideoMode, string> = {
+    play: 'Play video thumbnails',
+    hover: 'Play video thumbnails on hover',
+    still: 'Show video thumbnails as still frames',
+  };
   const pageSize = 40;
   const subfolderPreview = 12;
   const maxRecent = 6;
@@ -41,6 +48,8 @@
   let folderSort: FolderSort = 'recent';
   let fileSort: FileSort = 'newest';
   let thumbSize: ThumbSize = 'm';
+  let videoMode: VideoMode = 'play';
+  let videoAudio = true;
   let panelWidth = 260;
   let panelOpen = true;
   // Settings are read from localStorage on mount; nothing is saved before that.
@@ -99,6 +108,7 @@
   $: persist({
     folderPath, recent, pinned, pinnedOpen, recentOpen,
     folderSort, fileSort, thumbSize, panelWidth, panelOpen, expanded,
+    videoMode, videoAudio,
   });
 
   function persist(state: any) {
@@ -466,6 +476,8 @@
     folderSort = saved.folderSort || folderSort;
     fileSort = saved.fileSort || fileSort;
     thumbSize = saved.thumbSize || thumbSize;
+    videoMode = videoModes.includes(saved.videoMode) ? saved.videoMode : videoMode;
+    videoAudio = saved.videoAudio ?? videoAudio;
     panelWidth = saved.panelWidth || panelWidth;
     panelOpen = saved.panelOpen ?? window.innerWidth >= 640;
     restored = true;
@@ -682,6 +694,44 @@
         {/each}
       </div>
 
+      <div class="flex items-center gap-0.5 p-0.5 rounded-lg border border-base-content/30" role="group" aria-label={tt('Video thumbnails')}>
+        {#each videoModes as mode}
+          <button
+            class="btn btn-square h-7 w-7 min-h-0 rounded-md {videoMode === mode ? 'btn-primary' : 'btn-ghost opacity-60 hover:opacity-100'}"
+            title={tt(videoModeLabels[mode])}
+            aria-label={tt(videoModeLabels[mode])}
+            aria-pressed={videoMode === mode}
+            on:click={() => videoMode = mode}
+          >
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              {#if mode === 'play'}
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 010 1.972l-11.54 6.347a1.125 1.125 0 01-1.667-.986V5.653z" />
+              {:else if mode === 'hover'}
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.042 21.672L13.684 16.6m0 0l-2.51 2.225.569-9.47 5.227 7.917-3.286-.672zM12 2.25V4.5m5.834.166l-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243l-1.59-1.59" />
+              {:else}
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+              {/if}
+            </svg>
+          </button>
+        {/each}
+      </div>
+
+      <button
+        class="btn btn-sm btn-square {videoAudio ? 'btn-active' : 'btn-ghost'}"
+        title={tt(videoAudio ? 'Viewer audio on' : 'Viewer audio off')}
+        aria-label={tt('Viewer audio')}
+        aria-pressed={videoAudio}
+        on:click={() => videoAudio = !videoAudio}
+      >
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          {#if videoAudio}
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+          {:else}
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 9.75L19.5 12m0 0l2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+          {/if}
+        </svg>
+      </button>
+
       <button class="btn btn-ghost btn-sm btn-square" title={$t('common.btn.refresh')} aria-label={$t('common.btn.refresh')} on:click={refresh}>
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
@@ -733,7 +783,7 @@
         <div class="grid gap-2" style={gridStyle}>
           {#each fileItems.slice(0, showCursor) as file (file.name)}
             <div class="p-2 bg-info-content rounded flex flex-col min-w-0">
-              <MediaShow {file} styleClass="w-full aspect-square flex items-center justify-center" onClickDir={() => {}} onOpen={onOpenFile} />
+              <MediaShow {file} {videoMode} styleClass="w-full aspect-square flex items-center justify-center" onClickDir={() => {}} onOpen={onOpenFile} />
 
               <p class="font-bold text-sm leading-5 mt-1 truncate" title={file.name}>{file.name}</p>
               {#if thumbSize !== 's'}
@@ -804,6 +854,7 @@
     {folderType}
     {comfyApp}
     {toast}
+    audio={videoAudio}
     onClose={() => viewerIndex = -1}
   />
 {/if}

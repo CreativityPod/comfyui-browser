@@ -3,6 +3,26 @@
   export let styleClass: string;
   export let onClickDir: Function;
   export let onOpen: Function | undefined = undefined;
+  // 'play' loops on its own, 'hover' plays while the mouse is over it,
+  // 'still' only shows the first frame.
+  export let videoMode: 'play' | 'hover' | 'still' = 'play';
+
+  // Without autoplay, Safari leaves the frame blank unless the URL asks
+  // for a start time, so seek just past zero to show the first frame.
+  $: videoSrc = videoMode === 'play' ? file.previewUrl : `${file.previewUrl}#t=0.001`;
+
+  function onVideoEnter(e: MouseEvent) {
+    if (videoMode !== 'hover') return;
+    const video = e.currentTarget as HTMLVideoElement;
+    video.play().catch(() => {});
+  }
+
+  function onVideoLeave(e: MouseEvent) {
+    if (videoMode !== 'hover') return;
+    const video = e.currentTarget as HTMLVideoElement;
+    video.pause();
+    video.currentTime = 0.001;
+  }
 
   function onClickFile(e: MouseEvent) {
     if (!onOpen || !['image', 'video'].includes(file.fileType)) {
@@ -57,15 +77,21 @@
           alt={file.name} />
       {/if}
       {#if file.fileType === 'video'}
-        <video
-          class="h-full w-full object-contain pb-0.5 border-0.5 border-black"
-          src={file.previewUrl}
-          loop={true}
-          autoplay={true}
-          muted={true}
-        >
-          <track kind="captions" />
-        </video>
+        {#key videoMode}
+          <video
+            class="h-full w-full object-contain pb-0.5 border-0.5 border-black"
+            src={videoSrc}
+            loop={true}
+            autoplay={videoMode === 'play'}
+            muted={true}
+            playsinline
+            preload={videoMode === 'play' ? 'auto' : 'metadata'}
+            on:mouseenter={onVideoEnter}
+            on:mouseleave={onVideoLeave}
+          >
+            <track kind="captions" />
+          </video>
+        {/key}
       {/if}
     </a>
   {/if}

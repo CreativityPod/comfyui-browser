@@ -14,6 +14,9 @@
   export let comfyApp: any;
   export let toast: Toast;
   export let onClose: Function;
+  // Whether videos start with sound. The player's own button still
+  // unmutes the current video; the next one goes back to this setting.
+  export let audio = true;
 
   const localStorageKey = 'comfyui-browser-viewer-panel';
 
@@ -174,6 +177,7 @@
             controls
             autoplay
             loop
+            muted={!audio}
           >
             <track kind="captions" />
           </video>
